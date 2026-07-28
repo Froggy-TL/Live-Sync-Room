@@ -1,7 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 
 const app = express();
@@ -20,11 +20,11 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// === BASE DE DATOS SQLite ===
-const db = new sqlite3.Database('users.db');
+// === BASE DE DATOS SQLite (síncrono, sin errores) ===
+const db = new Database('users.db');
 
-// Crear tabla de usuarios si no existe
-db.run(`
+// Crear tabla si no existe
+db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -33,23 +33,14 @@ db.run(`
   )
 `);
 
-// Crear usuario admin por defecto (si no existe)
-db.get('SELECT * FROM users WHERE username = ?', ['admin'], (err, row) => {
-  if (err) {
-    console.error('Error al verificar admin:', err.message);
-    return;
-  }
-  if (!row) {
-    const hashed = bcrypt.hashSync('admin123', 10);
-    db.run('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', 
-      ['admin', hashed, 'admin'], 
-      (err) => {
-        if (err) console.error('Error al crear admin:', err.message);
-        else console.log('✅ Usuario admin creado');
-      }
-    );
-  }
-});
+// Crear usuario admin si no existe
+const admin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+if (!admin) {
+  const hashed = bcrypt.hashSync('admin123', 10);
+  db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)')
+    .run('admin', hashed, 'admin');
+  console.log('✅ Usuario admin creado');
+}
 
 // === VARIABLES GLOBALES DE LA SALA ===
 let currentSong = {
@@ -70,13 +61,12 @@ app.get('/', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-    if (err || !user || !bcrypt.compareSync(password, user.password)) {
-      return res.render('login', { error: 'Usuario o contraseña incorrectos' });
-    }
-    req.session.user = { id: user.id, username: user.username, role: user.role };
-    res.redirect('/dashboard');
-  });
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.render('login', { error: 'Usuario o contraseña incorrectos' });
+  }
+  req.session.user = { id: user.id, username: user.username, role: user.role };
+  res.redirect('/dashboard');
 });
 
 app.get('/logout', (req, res) => {
@@ -94,39 +84,33 @@ app.get('/dashboard', (req, res) => {
   }
 });
 
-// Ruta para que el admin agregue miembros
 app.post('/add-member', (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).send('No autorizado');
   }
   const { username, password } = req.body;
   if (!username || !password) return res.redirect('/dashboard');
-
-  const hashed = bcrypt.hashSync(password, 10);
-  db.run('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-    [username, hashed, 'member'],
-    (err) => {
-      if (err) console.log('Error al crear miembro:', err.message);
-      res.redirect('/dashboard');
-    }
-  );
+  try {
+    const hashed = bcrypt.hashSync(password, 10);
+    db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)')
+      .run(username, hashed, 'member');
+  } catch (e) {
+    console.log('Error al crear miembro:', e.message);
+  }
+  res.redirect('/dashboard');
 });
 
-// === SOCKET.IO (COMUNICACIÓN EN VIVO) ===
+// === SOCKET.IO ===
 io.on('connection', (socket) => {
   console.log('Nuevo usuario conectado');
-
-  // Enviar estado actual al conectarse
   socket.emit('song-update', currentSong);
 
-  // Escuchar cambios del admin
   socket.on('admin-change-song', (data) => {
     currentSong.name = data.name || 'Sin título';
     currentSong.artist = data.artist || 'Desconocido';
     currentSong.url = data.url || '';
     currentSong.isPlaying = data.isPlaying || false;
     currentSong.currentTime = data.currentTime || 0;
-
     io.emit('song-update', currentSong);
   });
 
@@ -140,7 +124,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// === INICIAR SERVIDOR ===
 server.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });

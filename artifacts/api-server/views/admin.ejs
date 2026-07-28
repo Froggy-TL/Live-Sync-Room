@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control — Sala de Escucha</title>
+  <style>
+    /* ==========================================
+       PANEL DE CONTROL DEL ADMINISTRADOR
+       Diseño dark estilo Discord/Spotify
+    ========================================== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary:   #0a0a0f;
+      --bg-secondary: #12121e;
+      --bg-card:      #1a1a2e;
+      --bg-sidebar:   #0f0f1a;
+      --border:       rgba(139, 92, 246, 0.15);
+      --accent:       #7c3aed;
+      --accent-hover: #6d28d9;
+      --accent-light: rgba(124, 58, 237, 0.2);
+      --text-primary: #f0f0f8;
+      --text-secondary: rgba(180, 180, 220, 0.7);
+      --text-muted:   rgba(120, 120, 160, 0.5);
+      --green:        #22c55e;
+      --red:          #ef4444;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar main";
+    }
+
+    /* ---- HEADER ---- */
+    header {
+      grid-area: header;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .header-brand span { font-size: 1.4rem; }
+
+    .admin-badge {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .logout-btn {
+      padding: 0.4rem 0.9rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+
+    /* ---- SIDEBAR ---- */
+    aside {
+      grid-area: sidebar;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Lista de miembros conectados en vivo */
+    #members-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      transition: background 0.2s;
+    }
+
+    .member-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .no-members {
+      color: var(--text-muted);
+      font-size: 0.825rem;
+      font-style: italic;
+    }
+
+    #member-count {
+      background: var(--accent-light);
+      color: #a78bfa;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+    }
+
+    /* ---- SECCIÓN: Agregar usuarios ---- */
+    .add-user-form {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .add-user-form input,
+    .add-user-form select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(139,92,246,0.15);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      margin-bottom: 0.6rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .add-user-form input:focus,
+    .add-user-form select:focus {
+      border-color: rgba(139,92,246,0.5);
+    }
+
+    .add-user-form select option { background: var(--bg-card); }
+
+    .btn-add-user {
+      width: 100%;
+      padding: 0.55rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-add-user:hover { background: var(--accent-hover); }
+
+    .error-small {
+      color: #fca5a5;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: rgba(220,38,38,0.1);
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .success-small {
+      color: #86efac;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: rgba(34,197,94,0.1);
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    /* Lista de usuarios registrados */
+    .user-list { list-style: none; }
+    .user-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.45rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .user-role-badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .role-admin  { background: rgba(124,58,237,0.2); color: #a78bfa; }
+    .role-member { background: rgba(34,197,94,0.15); color: #86efac; }
+
+    .btn-delete {
+      background: rgba(239,68,68,0.15);
+      color: #fca5a5;
+      border: none;
+      border-radius: 4px;
+      padding: 0.2rem 0.4rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-delete:hover { background: rgba(239,68,68,0.3); }
+
+    /* ---- MAIN AREA ---- */
+    main {
+      grid-area: main;
+      padding: 2rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Canción actual */
+    .now-playing-card {
+      background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(79,70,229,0.1));
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .album-art-placeholder {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .now-playing-info { flex: 1; min-width: 0; }
+
+    .now-playing-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    #song-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #song-artist {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    #song-url-display {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      word-break: break-all;
+    }
+
+    /* ---- REPRODUCTOR DE AUDIO ---- */
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem 2rem;
+    }
+
+    .player-card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    #audio-player {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      accent-color: var(--accent);
+    }
+
+    /* Controles de reproducción */
+    .player-controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-control {
+      flex: 1;
+      min-width: 100px;
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    #btn-play {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #fff;
+    }
+
+    #btn-play:hover { box-shadow: 0 4px 20px rgba(34,197,94,0.4); transform: translateY(-1px); }
+
+    #btn-pause {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+    }
+
+    #btn-pause:hover { box-shadow: 0 4px 20px rgba(245,158,11,0.4); transform: translateY(-1px); }
+
+    /* ---- FORMULARIO CAMBIAR CANCIÓN ---- */
+    .change-song-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem 2rem;
+    }
+
+    .change-song-card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .song-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .song-form-grid .full-width { grid-column: 1 / -1; }
+
+    .form-field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-field input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(139,92,246,0.15);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-field input:focus {
+      border-color: rgba(139,92,246,0.5);
+    }
+
+    .form-field input::placeholder { color: var(--text-muted); }
+
+    #btn-change-song {
+      margin-top: 1rem;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    #btn-change-song:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(124,58,237,0.4);
+    }
+
+    /* Toast / notificación */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: rgba(18,18,30,0.95);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header>
+    <div class="header-brand">
+      <span>🎵</span>
+      Sala de Escucha
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div class="header-user">
+      Hola, <strong><%= username %></strong>
+      <a href="/logout" class="logout-btn">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside>
+
+    <!-- Miembros conectados en vivo -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">
+        Miembros conectados
+        <span id="member-count">0</span>
+      </div>
+      <ul id="members-list">
+        <li class="no-members">Sin oyentes ahora</li>
+      </ul>
+    </div>
+
+    <!-- Agregar nuevo usuario -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Agregar usuario</div>
+      <form class="add-user-form" method="POST" action="/admin/users">
+        <% if (typeof userError !== 'undefined' && userError) { %>
+          <div class="error-small">⚠️ <%= userError %></div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="success-small">✅ Usuario creado correctamente</div>
+        <% } %>
+        <input type="text" name="username" placeholder="Nombre de usuario" required />
+        <input type="password" name="password" placeholder="Contraseña" required />
+        <select name="role">
+          <option value="member">Miembro</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="submit" class="btn-add-user">+ Crear usuario</button>
+      </form>
+    </div>
+
+    <!-- Lista de usuarios registrados -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Usuarios registrados</div>
+      <ul class="user-list">
+        <% users.forEach(function(user) { %>
+          <li>
+            <span>
+              <span class="user-role-badge <%= user.role === 'admin' ? 'role-admin' : 'role-member' %>">
+                <%= user.role %>
+              </span>
+              &nbsp;<%= user.username %>
+            </span>
+            <% if (user.username !== username) { %>
+              <form method="POST" action="/admin/users/delete" style="display:inline">
+                <input type="hidden" name="userId" value="<%= user.id %>" />
+                <button type="submit" class="btn-delete" onclick="return confirm('¿Eliminar a este usuario?')">✕</button>
+              </form>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
+
+  </aside>
+
+  <!-- ============ ÁREA PRINCIPAL ============ -->
+  <main>
+
+    <!-- Canción en reproducción -->
+    <div class="now-playing-card">
+      <div class="album-art-placeholder">🎵</div>
+      <div class="now-playing-info">
+        <div class="now-playing-label">▶ Reproduciendo ahora</div>
+        <div id="song-name">Sin canción cargada</div>
+        <div id="song-artist"></div>
+        <div id="song-url-display"></div>
+      </div>
+    </div>
+
+    <!-- Reproductor de audio -->
+    <div class="player-card">
+      <h2>🎛️ Control de reproducción</h2>
+
+      <audio id="audio-player" controls>
+        Tu navegador no soporta el elemento audio.
+      </audio>
+
+      <div class="player-controls">
+        <button class="btn-control" id="btn-play">▶ Reproducir para todos</button>
+        <button class="btn-control" id="btn-pause">⏸ Pausar para todos</button>
+      </div>
+    </div>
+
+    <!-- Formulario para cambiar canción -->
+    <div class="change-song-card">
+      <h2>🔄 Cambiar canción</h2>
+
+      <div class="song-form-grid">
+        <div class="form-field">
+          <label for="input-song-name">Nombre de la canción</label>
+          <input type="text" id="input-song-name" placeholder="Ej: Bohemian Rhapsody" />
+        </div>
+        <div class="form-field">
+          <label for="input-artist">Artista</label>
+          <input type="text" id="input-artist" placeholder="Ej: Queen" />
+        </div>
+        <div class="form-field full-width">
+          <label for="input-url">URL directa del archivo de audio (MP3, OGG, etc.)</label>
+          <input type="url" id="input-url" placeholder="https://ejemplo.com/cancion.mp3" />
+        </div>
+      </div>
+
+      <button id="btn-change-song">🔄 Cambiar canción y sincronizar</button>
+    </div>
+
+  </main>
+
+  <!-- Notificación flotante -->
+  <div id="toast"></div>
+
+  <!-- Socket.IO cliente (servido automáticamente por el servidor) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // =============================================
+    // JAVASCRIPT DEL PANEL DE ADMINISTRADOR
+    // Maneja Socket.IO y controles de reproducción
+    // =============================================
+
+    const audio        = document.getElementById('audio-player');
+    const songNameEl   = document.getElementById('song-name');
+    const songArtistEl = document.getElementById('song-artist');
+    const songUrlEl    = document.getElementById('song-url-display');
+    const membersList  = document.getElementById('members-list');
+    const memberCount  = document.getElementById('member-count');
+    const toastEl      = document.getElementById('toast');
+
+    // Conectar al servidor Socket.IO
+    const socket = io();
+
+    // -----------------------------------------------
+    // Función para mostrar una notificación temporal
+    // -----------------------------------------------
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 3000);
+    }
+
+    // -----------------------------------------------
+    // Recibir el estado actual al conectarse
+    // -----------------------------------------------
+    socket.on('sync:state', (state) => {
+      updateSongInfo(state.url, state.name, state.artist);
+
+      if (state.url) {
+        audio.src = state.url;
+        // Calcular el tiempo real considerando el delay de red
+        const networkDelayMs = Date.now() - state.serverTime;
+        const adjustedTime = state.currentTime + (networkDelayMs / 1000);
+        audio.currentTime = adjustedTime;
+
+        if (state.isPlaying) {
+          audio.play().catch(() => {});
+        }
+      }
+    });
+
+    // -----------------------------------------------
+    // Evento: Actualizar lista de miembros conectados
+    // -----------------------------------------------
+    socket.on('members:update', (members) => {
+      memberCount.textContent = members.length;
+
+      if (members.length === 0) {
+        membersList.innerHTML = '<li class="no-members">Sin oyentes ahora</li>';
+        return;
+      }
+
+      membersList.innerHTML = members.map(name => `
+        <li class="member-item">
+          <div class="member-dot"></div>
+          ${escapeHtml(name)}
+        </li>
+      `).join('');
+    });
+
+    // -----------------------------------------------
+    // Botón REPRODUCIR → enviar play a todos
+    // -----------------------------------------------
+    document.getElementById('btn-play').addEventListener('click', () => {
+      const currentTime = audio.currentTime || 0;
+      audio.play().then(() => {
+        socket.emit('admin:play', { currentTime });
+        showToast('▶ Reproduciendo para todos los oyentes');
+      }).catch(err => {
+        console.error('Error al reproducir:', err);
+        showToast('⚠️ No se pudo reproducir. ¿Hay una URL cargada?');
+      });
+    });
+
+    // -----------------------------------------------
+    // Botón PAUSAR → enviar pause a todos
+    // -----------------------------------------------
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      audio.pause();
+      socket.emit('admin:pause', { currentTime: audio.currentTime });
+      showToast('⏸ Pausado para todos los oyentes');
+    });
+
+    // -----------------------------------------------
+    // Botón CAMBIAR CANCIÓN → enviar nueva canción a todos
+    // -----------------------------------------------
+    document.getElementById('btn-change-song').addEventListener('click', () => {
+      const name   = document.getElementById('input-song-name').value.trim();
+      const artist = document.getElementById('input-artist').value.trim();
+      const url    = document.getElementById('input-url').value.trim();
+
+      if (!url) {
+        showToast('⚠️ Por favor ingresa la URL del archivo de audio');
+        return;
+      }
+
+      // Cargar la nueva canción en el reproductor del admin
+      audio.src = url;
+      audio.currentTime = 0;
+      audio.pause();
+
+      // Actualizar la info visible en el panel
+      updateSongInfo(url, name || 'Sin título', artist);
+
+      // Enviar la nueva canción a todos los clientes
+      socket.emit('admin:changeSong', {
+        url,
+        name: name || 'Sin título',
+        artist,
+      });
+
+      showToast('🔄 Canción cambiada y enviada a todos');
+
+      // Limpiar el formulario
+      document.getElementById('input-song-name').value = '';
+      document.getElementById('input-artist').value    = '';
+      document.getElementById('input-url').value       = '';
+    });
+
+    // -----------------------------------------------
+    // Recibir confirmación de cambio de canción
+    // (útil si otra sesión admin cambia la canción)
+    // -----------------------------------------------
+    socket.on('sync:changeSong', (data) => {
+      audio.src = data.url;
+      audio.currentTime = 0;
+      audio.pause();
+      updateSongInfo(data.url, data.name, data.artist);
+    });
+
+    // -----------------------------------------------
+    // Actualizar la info de la canción en el panel
+    // -----------------------------------------------
+    function updateSongInfo(url, name, artist) {
+      songNameEl.textContent   = name   || 'Sin canción cargada';
+      songArtistEl.textContent = artist || '';
+      songUrlEl.textContent    = url    || '';
+    }
+
+    // -----------------------------------------------
+    // Escapar HTML para prevenir XSS
+    // -----------------------------------------------
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.appendChild(document.createTextNode(str));
+      return d.innerHTML;
+    }
+  </script>
+
+</body>
+</html>

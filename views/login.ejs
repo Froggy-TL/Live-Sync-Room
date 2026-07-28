@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Sync Room - Login</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <h1>🎵 Live Sync Room</h1>
+    <form method="POST" action="/login">
+      <input type="text" name="username" placeholder="Usuario" required>
+      <input type="password" name="password" placeholder="Contraseña" required>
+      <button type="submit">Iniciar Sesión</button>
+      <% if (error) { %>
+        <p class="error"><%= error %></p>
+      <% } %>
+    </form>
+    <p class="hint">Admin: admin / admin123</p>
+  </div>
+</body>
+      </html>

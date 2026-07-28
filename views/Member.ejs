@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Miembro - Live Sync Room</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container member-view">
+    <header>
+      <h1>🎵 Escuchando en vivo</h1>
+      <div class="user-info">
+        <span>👤 <%= user.username %></span>
+        <a href="/logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="player-card">
+      <div class="song-info">
+        <h2 id="display-name"><%= song.name %></h2>
+        <h3 id="display-artist"><%= song.artist %></h3>
+        <p><strong>URL:</strong> <span id="display-url"><%= song.url || 'Sin URL' %></span></p>
+      </div>
+      <div class="status">
+        <span id="status-text">⏸ En pausa</span>
+      </div>
+      <audio id="member-audio" controls>
+        <source src="<%= song.url %>" type="audio/mpeg">
+      </audio>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/script.js"></script>
+</body>
+</html>

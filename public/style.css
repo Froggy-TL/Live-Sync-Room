@@ -1,0 +1,28 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; }
+
+.login-body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #0a0a0a; }
+.login-container { background: #1e1e1e; padding: 40px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.8); width: 300px; text-align: center; }
+.login-container h1 { color: #1db954; margin-bottom: 20px; }
+.login-container input { width: 100%; padding: 10px; margin: 8px 0; border: none; border-radius: 4px; background: #333; color: #fff; }
+.login-container button { width: 100%; padding: 10px; background: #1db954; border: none; border-radius: 4px; color: #fff; font-weight: bold; cursor: pointer; }
+.error { color: #ff4444; margin-top: 10px; }
+.hint { margin-top: 15px; font-size: 12px; color: #888; }
+
+.container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 25px; }
+.user-info a { color: #1db954; margin-left: 15px; text-decoration: none; }
+.main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+.control-panel, .members-panel { background: #1e1e1e; padding: 25px; border-radius: 10px; }
+.form-group input, .members-panel input { width: 100%; padding: 10px; margin: 5px 0; background: #333; border: none; border-radius: 4px; color: #fff; }
+button { padding: 8px 15px; background: #1db954; border: none; border-radius: 4px; color: #fff; cursor: pointer; margin: 5px 2px; }
+.player-controls button { font-size: 16px; padding: 10px 20px; }
+.current-song { background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+#members-list { list-style: none; padding: 0; }
+
+.member-view { display: flex; justify-content: center; align-items: center; height: 90vh; }
+.player-card { background: #1e1e1e; padding: 40px; border-radius: 16px; text-align: center; width: 600px; }
+.song-info h2 { font-size: 2.5rem; color: #fff; }
+.song-info h3 { font-size: 1.5rem; color: #aaa; margin-bottom: 10px; }
+.status { margin: 20px 0; font-size: 1.2rem; color: #1db954; }
+audio { width: 100%; }

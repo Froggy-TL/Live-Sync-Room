@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Live Sync Room</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎧 Panel de Administrador</h1>
+      <div class="user-info">
+        <span>👤 <%= user.username %></span>
+        <a href="/logout">Cerrar sesión</a>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <!-- Columna izquierda: Control de música -->
+      <div class="control-panel">
+        <h2>Control de Música</h2>
+        <div class="current-song">
+          <p><strong>Nombre:</strong> <span id="song-name"><%= song.name %></span></p>
+          <p><strong>Artista:</strong> <span id="song-artist"><%= song.artist %></span></p>
+          <p><strong>URL:</strong> <span id="song-url"><%= song.url || 'Sin URL' %></span></p>
+        </div>
+
+        <div class="form-group">
+          <input type="text" id="new-name" placeholder="Nombre de la canción" value="<%= song.name %>">
+          <input type="text" id="new-artist" placeholder="Artista" value="<%= song.artist %>">
+          <input type="text" id="new-url" placeholder="URL del archivo MP3" value="<%= song.url %>">
+          <button id="btn-change">Cambiar Canción</button>
+        </div>
+
+        <div class="player-controls">
+          <button id="btn-play">▶ Reproducir</button>
+          <button id="btn-pause">⏸ Pausar</button>
+        </div>
+
+        <audio id="admin-audio" controls style="width:100%; margin-top:10px;">
+          <source src="<%= song.url %>" type="audio/mpeg">
+        </audio>
+      </div>
+
+      <!-- Columna derecha: Gestión de miembros -->
+      <div class="members-panel">
+        <h2>👥 Miembros Conectados</h2>
+        <ul id="members-list">
+          <li>Conectados: <span id="count">0</span></li>
+        </ul>
+        <hr>
+        <h3>Agregar Miembro</h3>
+        <form method="POST" action="/add-member">
+          <input type="text" name="username" placeholder="Usuario" required>
+          <input type="password" name="password" placeholder="Contraseña" required>
+          <button type="submit">Crear Miembro</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/script.js"></script>
+</body>
+</html>

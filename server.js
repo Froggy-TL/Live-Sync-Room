@@ -1,7 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
-const Database = require('better-sqlite3');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
@@ -21,8 +21,10 @@ app.use(session({
 }));
 
 // === BASE DE DATOS SQLite ===
-const db = new Database('users.db');
-db.exec(`
+const db = new sqlite3.Database('users.db');
+
+// Crear tabla de usuarios si no existe
+db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -32,11 +34,22 @@ db.exec(`
 `);
 
 // Crear usuario admin por defecto (si no existe)
-const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
-if (!adminExists) {
-  const hashed = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run('admin', hashed, 'admin');
-}
+db.get('SELECT * FROM users WHERE username = ?', ['admin'], (err, row) => {
+  if (err) {
+    console.error('Error al verificar admin:', err.message);
+    return;
+  }
+  if (!row) {
+    const hashed = bcrypt.hashSync('admin123', 10);
+    db.run('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', 
+      ['admin', hashed, 'admin'], 
+      (err) => {
+        if (err) console.error('Error al crear admin:', err.message);
+        else console.log('✅ Usuario admin creado');
+      }
+    );
+  }
+});
 
 // === VARIABLES GLOBALES DE LA SALA ===
 let currentSong = {
@@ -57,12 +70,13 @@ app.get('/', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user || !bcrypt.compareSync(password, user.password)) {
-    return res.render('login', { error: 'Usuario o contraseña incorrectos' });
-  }
-  req.session.user = { id: user.id, username: user.username, role: user.role };
-  res.redirect('/dashboard');
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err || !user || !bcrypt.compareSync(password, user.password)) {
+      return res.render('login', { error: 'Usuario o contraseña incorrectos' });
+    }
+    req.session.user = { id: user.id, username: user.username, role: user.role };
+    res.redirect('/dashboard');
+  });
 });
 
 app.get('/logout', (req, res) => {
@@ -82,16 +96,20 @@ app.get('/dashboard', (req, res) => {
 
 // Ruta para que el admin agregue miembros
 app.post('/add-member', (req, res) => {
-  if (!req.session.user || req.session.user.role !== 'admin') return res.status(403).send('No autorizado');
+  if (!req.session.user || req.session.user.role !== 'admin') {
+    return res.status(403).send('No autorizado');
+  }
   const { username, password } = req.body;
   if (!username || !password) return res.redirect('/dashboard');
-  try {
-    const hashed = bcrypt.hashSync(password, 10);
-    db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run(username, hashed, 'member');
-  } catch (e) {
-    console.log('Error al crear miembro:', e.message);
-  }
-  res.redirect('/dashboard');
+
+  const hashed = bcrypt.hashSync(password, 10);
+  db.run('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+    [username, hashed, 'member'],
+    (err) => {
+      if (err) console.log('Error al crear miembro:', err.message);
+      res.redirect('/dashboard');
+    }
+  );
 });
 
 // === SOCKET.IO (COMUNICACIÓN EN VIVO) ===
@@ -103,14 +121,12 @@ io.on('connection', (socket) => {
 
   // Escuchar cambios del admin
   socket.on('admin-change-song', (data) => {
-    // Actualizar variables globales
     currentSong.name = data.name || 'Sin título';
     currentSong.artist = data.artist || 'Desconocido';
     currentSong.url = data.url || '';
     currentSong.isPlaying = data.isPlaying || false;
     currentSong.currentTime = data.currentTime || 0;
 
-    // Emitir a TODOS los miembros
     io.emit('song-update', currentSong);
   });
 
@@ -126,5 +142,5 @@ io.on('connection', (socket) => {
 
 // === INICIAR SERVIDOR ===
 server.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });
